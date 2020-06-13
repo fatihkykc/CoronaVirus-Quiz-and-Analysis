@@ -23,25 +23,25 @@ Data Visualization
 
 ### Distribution of the scores according to the quiz taker's age
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/yaş-score-1.png)
+![](files/figure-markdown_github/yaş-score-1.png)
 
 As seen in the visualization, the young adult and adult groups are very close in terms of their score, there are 2 age groups that stands out, which are children (&lt;18) and older adults (&gt;55). Children group has the lowest score in all four groups, which is expected. Older adults have the highest score of all four groups. Which is not much surprising since the virus is particularly dangerous for older people, but this is not much accountable, since there are only 2 samples from the older adult age group.
 
 ### Distribution of the Total.scores
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/score_count-1.png)
+![](files/figure-markdown_github/score_count-1.png)
 
 From the graph it can be clearly seen that the scores distribution follows the normal distribution. Most people get a score of 60 or 70, which is a mediocre level of knowledge about the virus and effects.
 
 ### Distribution of scores according to the quiz taker's education level
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/eğitim_score-1.png)
+![](files/figure-markdown_github/eğitim_score-1.png)
 
 Unsurprisingly, we can see the samples with the lowest education level, which is 'primary school' doesn't have as much success in the test as the people with higher education, But there seems to be not much difference between the 'Highscool' and 'University' education levels, other than the variation.
 
 ### Distribution of the scores with respect to the smoker/non-smoker property
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/smoking_score-1.png)
+![](files/figure-markdown_github/smoking_score-1.png)
 
 Interestingly, people who smoke has clearly more success at the test, It can be associated with some of the questions, we can further investigate the reason.
 
@@ -54,7 +54,7 @@ Confidence Intervals
     ## Erkek 51.83954 76.39576
     ## Kadın 57.86187 73.13813
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/cidgender-1.png)
+![](files/figure-markdown_github/cidgender-1.png)
 
 Looking at the confidence intervals, We can be %95 confident that the true mean for the male population is between 51.83954 and 76.39576.
 
@@ -69,7 +69,7 @@ We can see there is not much difference on the means for the genders, and the co
     ## Lise       57.36055 82.63945
     ## İlkokul    39.40606 63.45108
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/cidEğitim-1.png)
+![](files/figure-markdown_github/cidEğitim-1.png)
 
 We can be %95 confident that the true mean for the population that has education level of primary school is between 57.99329 and 76.78932
 
@@ -94,7 +94,7 @@ We can see the mean total scores of the three education levels, the mean total.s
     ## İletişim                         NA        NA
     ## Spor Bilimleri                   NA        NA
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/cidFakülte-1.png)
+![](files/figure-markdown_github/cidFakülte-1.png)
 
 In the samples where the faculty of the quiz taker is; 'Edebiyat', 'Eğitim', 'İletişim', 'Mimarlık', 'Sağlık Bilimleri' and 'Tıp', there are only 1 samples each. Thus there are no confidence interval for those samples. The first bar, without the name is the samples for samples without the education level 'University'.
 
@@ -177,7 +177,7 @@ t(o) (0.20726) &lt; t(t) ~2
 Fail to reject Null
 There is no evidence that the true mean values for males and females is different.
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/genderp-1.png)
+![](files/figure-markdown_github/genderp-1.png)
 
 Testing the answer to a specific question as smoker/non smoker
 --------------------------------------------------------------
@@ -260,7 +260,7 @@ There is no evidence that mean difference of Total.scores for smokers and non-sm
 
 Let's look at a plot to see the answers for that particular question ('Koronavirüsten en ciddi etkilenen gruplar hangileridir?') described by the question; ('Sigara kullanıyor musunuz?')
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/q7-1.png)
+![](files/figure-markdown_github/q7-1.png)
 
     ## [1] 5.833333 2.000000
 
@@ -272,7 +272,7 @@ This partially explains why non-smokers get lesser grades than smokers.
 Testing the total.score by age groups
 -------------------------------------
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/25yaşplot-1.png)
+![](files/figure-markdown_github/25yaşplot-1.png)
 
 is the data normally distributed?
 Ho: data is normally distributed
@@ -348,7 +348,7 @@ ANOVA test
 
 Ho: data is normally distributed Ha: data is not normally distributed
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/ANOVA%20Eğitim-1.png)
+![](files/figure-markdown_github/ANOVA%20Eğitim-1.png)
 
     ## 
     ##  Shapiro-Wilk normality test
@@ -413,4 +413,4 @@ Posthoc test to find which one is different.
 
 We have already tested the assumptions needed for the anova test, But the assumptions can also be tested using the plots.
 
-![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/anovaplot-1.png)![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/anovaplot-2.png)![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/anovaplot-3.png)![](fatih_kıyıkçı_hwfinal_files/figure-markdown_github/anovaplot-4.png)
+![](files/figure-markdown_github/anovaplot-1.png)![](files/figure-markdown_github/anovaplot-2.png)![](files/figure-markdown_github/anovaplot-3.png)![](files/figure-markdown_github/anovaplot-4.png)
