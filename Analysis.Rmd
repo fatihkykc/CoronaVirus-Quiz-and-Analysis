@@ -1,0 +1,482 @@
+---
+title: "Covid-19 awareness data analysis"
+output: html_document
+author: "Fatih KIYIKÇI"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library("ggplot2")
+library("varhandle")
+library(viridis)
+
+ggplot_CI <- function(dataframe, percentage=0.95){
+  a <- mean(dataframe)
+  s <- sd(dataframe)
+  error <- qt(1-(1 - percentage)/2,length(dataframe)) * s/sqrt(length(dataframe))
+  boundries <- matrix(nrow=1, ncol=3)
+  colnames(boundries) <-c("y", "ymin", "ymax")
+  boundries[1,1] <- a
+  boundries[1,2] <- a-error
+  boundries[1,3] <- a+error
+  return(boundries)
+}
+
+findCI <- function(dataframe, percentage){
+  a <- mean(dataframe)
+  s <- sd(dataframe)
+  error <- qt(1-(1 - percentage)/2,length(dataframe)) * s/sqrt(length(dataframe))
+  boundries <- c(a-error, a+error,a)
+  return(boundries)
+}
+#function to find CI's according to the groups.
+getCIs <- function (dataframe, groupsdataframe, percentage) {
+  #get rows according to their respective genders
+  groups <- unique(groupsdataframe)
+  n_groups <- length(groups)
+  cis <- matrix(nrow=n_groups, ncol=2)
+  for (i in 1:n_groups){
+    # extract the rows with corresponding group
+    rows <- which(groupsdataframe == groups[i])
+    obs <- dataframe[rows]
+    obs <- na.omit(obs)
+    #mean of sample size
+    CIandMean <- findCI(obs, percentage)
+    cis[i,1] <- CIandMean[1]
+    cis[i,2] <- CIandMean[2]
+    sample_mean <- CIandMean[3]
+    rownames(cis) <- groups
+    colnames(cis) <- c("lower", "upper")
+  }
+  return(cis)
+}
+```
+## Quiz and data gathering
+
+I tried to make the quiz not too hard, but at the same time hard to get a 100 or 90 points, selected some of the questions and options to acquire both the knowledge and common sense of people. There was only one person that did not answered a question.
+Non-demographic Questions and response rates are:  
+  
+Corona virüsün ölümcüllük seviyesi nedir? 37/37  
+Koronavirüs'ün en yaygın belirtileri nelerdir? 37/37  
+koronavirüs tanısı konulmuş biriyle temastan sonra ne yapılmalıdır? 37/37  
+Koronavirüs belirtisi gösterenler ne yapmalı? 37/37  
+Virüsten hijyenik olarak korunmak için hangileri yapılmalıdır? 37/37  
+Koronavirüsten en ciddi etkilenen gruplar hangileridir? 37/37  
+Hangileri koronavirüse karşı alınacak önlemler arasındadır? 37/37  
+Covid-19 hastalığını tedavi edebilecek aşı, ilaç veya bir tedavi mevcut olarak bulunmakta mıdır?  36/37  
+Hangisi koronavirüse karşı daha etkili bir yöntemdir? 37/37  
+Covid-19 Hastalığını oluşturan virüsün adı nedir? 37/37  
+
+```{r answers, include=FALSE}
+answers <- read.csv('COVİD-19 FARKINDALIK.csv')
+attach(answers)
+
+Total.score <- varhandle::unfactor(Total.score, auto_class_conversion = TRUE, verbose = FALSE)
+
+for (i in 1:length(Total.score)) {
+  Total.score[i] <- unlist(strsplit(Total.score[i], ' '))[1]
+}
+Total.scores <- as.numeric(Total.score)
+
+
+Grup.score <- varhandle::unfactor(Koronavirüsten.en.ciddi.etkilenen.gruplar.hangileridir...Score., auto_class_conversion = TRUE, verbose = FALSE)
+
+for (i in 1:length(Grup.score)) {
+  Grup.score[i] <- unlist(strsplit(Grup.score[i], ' '))[1]
+}
+Grup.scores <- as.numeric(Grup.score)
+
+
+```
+
+## Data Visualization
+
+### Distribution of the scores according to the quiz taker's age  
+
+```{r yaş-score, echo=FALSE, warning=FALSE}
+ageGroups <- cut(
+  answers$Yaş,
+  breaks = c(0, 18, 25, 55, Inf),
+  labels = c("children(<18)", "young adult(<25)", "adult(<55)", "older adult"),
+  right  = FALSE
+)
+ncscore2plot <- ggplot(data=answers, aes(y=Total.scores, x=ageGroups))
+ncscore2plot+
+geom_boxplot(aes(fill=ageGroups))
+# scale_color_viridis(option = "D")
+   # geom_point(position=position_jitter(width=1,height=.1))
+```
+
+As seen in the visualization, the young adult and adult groups are very close in terms of their score, there are 2 age groups that stands out, which are children (<18) and older adults (>55). Children group has the lowest score in all four groups, which is expected.
+Older adults have the highest score of all four groups. Which is not much surprising since the virus is particularly dangerous for older people, but this is not much accountable, since there are only 2 samples from the older adult age group.
+
+### Distribution of the Total.scores  
+
+```{r score_count, echo=FALSE}
+ncscore2plot <- ggplot(data=answers, aes(x=as.numeric(as.character(Total.scores))))
+ncscore2plot+
+  geom_bar()+
+  xlab("Total.scores")
+```
+
+From the graph it can be clearly seen that the scores distribution follows the normal distribution. Most people get a score of 60 or 70, which is a mediocre level of knowledge about the virus and effects.
+
+### Distribution of scores according to the quiz taker's education level  
+
+```{r eğitim_score, echo=FALSE}
+ncscore2plot <- ggplot(data=answers, aes(y=as.numeric(as.character(Total.scores)), x=Eğitim.durumu, fill=Eğitim.durumu))
+ncscore2plot+
+  geom_boxplot()+
+  ylab("Total.scores")
+```
+
+Unsurprisingly, we can see the samples with the lowest education level, which is 'primary school' doesn't have as much success in the test as the people with higher education, But there seems to be not much difference between the 'Highscool' and 'University' education levels, other than the variation.
+
+### Distribution of the scores with respect to the smoker/non-smoker property
+
+```{r smoking_score, echo=FALSE, warning=FALSE}
+ncscore2plot <- ggplot(data=answers, aes(y=as.numeric(as.character(Total.scores)), x=Sigara.kullanıyor.musunuz., fill=Sigara.kullanıyor.musunuz.))
+ncscore2plot+
+  geom_boxplot()+
+  ylab("Total.scores")
+```
+
+Interestingly, people who smoke has clearly more success at the test, It can be associated with some of the questions, we can further investigate the reason.
+
+## Confidence Intervals
+
+### Confidence interval and confidence interval plot, with respect to the gender of the quiz taker.  
+
+```{r cidgender, echo=FALSE, warning=FALSE}
+getCIs(Total.scores, Cinsiyet, 0.95)
+
+scoregenderplot <- ggplot(data=answers, aes(Cinsiyet, Total.scores, fill = Cinsiyet))
+scoregenderplot+
+  stat_summary(fun.y = mean,
+               geom = "bar")+
+  stat_summary(fun.data = ggplot_CI,
+               geom="errorbar",
+               position="dodge",
+               width=.2)
+```
+
+Looking at the confidence intervals, We can be %95 confident that the true mean for the male population is between 51.83954 and 76.39576.  
+  
+We can be %95 confident that the true mean for the female population is between 57.86187 and 73.13813  
+  
+We can see there is not much difference on the means for the genders, and the confidence interval for males is wider, this can be caused by the lack of information (as sample size) for males.
+
+### Confidence interval and confidence interval plot, with respect to the education level of the quiz taker.  
+
+```{r cidEğitim, echo=FALSE, warning=FALSE}
+getCIs(Total.scores, Eğitim.durumu, 0.95)
+
+scoreeğitimplot <- ggplot(data=answers, aes(Eğitim.durumu, Total.scores, fill=Eğitim.durumu))
+scoreeğitimplot+
+  stat_summary(fun.y = mean,
+               geom = "bar")+
+  stat_summary(fun.data = ggplot_CI,
+               geom="errorbar",
+               position="dodge",
+               width=.2)
+
+```
+
+We can be %95 confident that the true mean for the population that has education level of primary school is between 57.99329 and 76.78932  
+  
+We can be %95 confident that the true mean for the population that has education level of High school is between 57.36055 and 82.63945  
+  
+We can be %95 confident that the true mean for the population that has education level of University is between 39.40606 and 63.45108  
+  
+We can see the mean total scores of the three education levels, the mean total.scores of the samples that has education level of primary school is the lowest.
+
+### Confidence intervals and confidence interval plots, with respect to the Faculty of the quiz taker.  
+
+``` {r cidFakülte, echo=FALSE, warning=FALSE}
+getCIs(Total.scores, na.omit(Fakülte), 0.95)
+
+scorefakülteplot <- ggplot(data=answers, aes(na.omit(Fakülte), Total.scores, fill=Fakülte))
+scorefakülteplot+
+  stat_summary(fun.y = mean,
+               geom = "bar")+
+  stat_summary(fun.data = ggplot_CI,
+               conf.int=0.95,
+               geom="errorbar",
+               position="dodge",
+               width=.2)+
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))+
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 10))+
+  xlab("Fakülte")
+
+```
+
+In the samples where the faculty of the quiz taker is; 'Edebiyat', 'Eğitim', 'İletişim', 'Mimarlık', 'Sağlık Bilimleri' and 'Tıp',
+there are only 1 samples each. Thus there are no confidence interval for those samples. The first bar, without the name is the samples for samples without the education level 'University'.
+
+# Hypothesis Testing
+
+## Testing mean scores based on gender
+
+### Normality testing
+is the data normally distributed?  
+Ho: data is normally distributed  
+Ha: data is not normally distributed  
+
+```{r lentest, echo=FALSE, warning=FALSE}
+sprintf("length of male samples: %d", length(na.omit(Total.scores[Cinsiyet == "Erkek"])))
+sprintf("length of female samples: %d", length(na.omit(Total.scores[Cinsiyet == "Kadın"])))
+shapiro.test(Total.scores[Cinsiyet == "Erkek"])
+shapiro.test(Total.scores[Cinsiyet == "Kadın"])
+```
+p-value 0.6781, 0.3424 > 0.05, fail to reject the null hyphotesis,  
+We assume both dataframes are normal 
+
+### Variance test
+
+are variances the same for both sets?  
+Ho: varMale == varFemale  
+Ha: varMale != varFemale  
+
+```{r vartest, echo=FALSE, warning=FALSE}
+var.test(Total.scores[Cinsiyet == "Erkek"], Total.scores[Cinsiyet == "Kadın"])
+```
+
+confidence interval for variances equality includes 1 [0.8287488, 5.7926705]  
+p-value = 0.1137 > 0.05  
+Fail to Reject Null  
+We assume variances are equal.  
+
+### Testing a Hyphotesis
+Let's create a null hypothesis,  
+Ho: mean scores of both male and female are the same muFemale = muMale  
+An alternative hypothesis,  
+Ha: mean scores of males and females are not the same. muFemale != muMale 
+
+```{r scoreongendertest, echo=FALSE, warning=FALSE}
+t.test(Total.scores[Cinsiyet == "Erkek"], Total.scores[Cinsiyet == "Kadın"],
+       conf.level = 0.95,
+       mu = 0,
+       var.equal = TRUE,
+       alternative = "two.sided"  )
+```
+
+p-value = 0.837 > 0.05  
+confidence interval includes mu=0. [-14.92231, 12.15760]  
+t(o) (0.20726) < t(t) ~2  
+Fail to reject Null  
+There is no evidence that the true mean values for males and females is different.
+
+``` {r genderp, echo=FALSE, warning=FALSE}
+ncscore2plot <- ggplot(data=answers, aes(y=as.numeric(as.character(Total.scores)), x=Cinsiyet, fill=Cinsiyet))
+ncscore2plot+
+  geom_boxplot()+
+  ylab("Total.scores")
+```
+
+## Testing the answer to a specific question as smoker/non smoker
+
+In the visualizations, an interesting result caught my attention;
+The smokers tend to have clearly better scores than non-smokers. This might be associated with the question;
+'Koronavirüsten en ciddi etkilenen gruplar hangileridir?', which smoking is an answer option.
+
+Since every question is worth of 10 points, i thought i could test an alternative hyphotesis:
+'The mean difference of Total.scores between smokers and non smokers is greater than 10'
+
+### Normality test
+
+is the data normally distributed?  
+Ho: data is normally distributed  
+Ha: data is not normally distributed 
+
+```{r lensmoke, echo=FALSE, warning=FALSE}
+sprintf("length of smoking samples: %d", length(na.omit(Total.scores[Sigara.kullanıyor.musunuz. == "Evet"])))
+sprintf("length of non-smoking samples: %d", length(na.omit(Total.scores[Sigara.kullanıyor.musunuz. == "Hayır"])))
+shapiro.test(Total.scores[Sigara.kullanıyor.musunuz. == "Evet"])
+shapiro.test(Total.scores[Sigara.kullanıyor.musunuz. == "Hayır"])
+```
+p-value 0.1428, 0.2654 > 0.05 
+Fail to reject the null hyphotesis,  
+We assume both dataframes are normal 
+
+### Variance test
+
+are variances the same for both sets?  
+Ho: varMale == varFemale  
+Ha: varMale != varFemale
+
+```{r vartest smoker, echo=FALSE, warning=FALSE}
+var.test(Total.scores[Sigara.kullanıyor.musunuz. == "Evet"], Total.scores[Sigara.kullanıyor.musunuz. == "Hayır"])
+```
+confidence interval for variances equality includes 1 [0.2563206, 2.1032885]  
+p-value = 0.4837 > 0.05  
+Fail to Reject Null  
+We assume variances are equal.  
+
+### Testing a Hyphotesis
+
+Let's create a null hypothesis,  
+Ho: difference in mean scores for smokers and non smokers is less than 10 muNonSmokers >= muSmokers-10
+An alternative hypothesis,  
+Ha: difference in mean scores for smokers and non smokers is greater or equal than 10
+
+```{r scoreonsmokertest, echo=FALSE, warning=FALSE}
+t.test(Total.scores~Sigara.kullanıyor.musunuz.,
+       conf.level = 0.95,
+       mu = 10,
+       var.equal = TRUE,
+       alternative = "greater"  )
+
+
+Belirti.score <- varhandle::unfactor(Koronavirüsten.en.ciddi.etkilenen.gruplar.hangileridir...Score., auto_class_conversion = TRUE, verbose = FALSE)
+
+for (i in 1:length(Grup.score)) {
+  Belirti.score[i] <- unlist(strsplit(Belirti.score[i], ' '))[1]
+}
+
+Belirti.score <- as.numeric(Belirti.score)
+
+```
+p-value = 0.03872 < 0.05  
+confidence interval does not include mu=10. [10.79602, Inf]  
+t(o) (1.8193) < t(t) ~2  
+Reject Null  
+There is no evidence that mean difference of Total.scores for smokers and non-smokers is less than 10, with %95 confidence.
+
+Let's look at a plot to see the answers for that particular question ('Koronavirüsten en ciddi etkilenen gruplar hangileridir?') described by the question; ('Sigara kullanıyor musunuz?')
+
+``` {r q7, echo=FALSE, warning=FALSE}
+ncscore2plot <- ggplot(data=answers, aes(y=Koronavirüsten.en.ciddi.etkilenen.gruplar.hangileridir., fill=Sigara.kullanıyor.musunuz.))
+
+ncscore2plot+
+  geom_bar(position = 'dodge')+
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+c(mean(Belirti.score[Sigara.kullanıyor.musunuz. == 'Evet']), mean(Belirti.score[Sigara.kullanıyor.musunuz. == 'Hayır']))
+```
+As seen in the plot 9/25 non-smokers' answers included the smokers and wrong.  
+The mean score for the question, answered by the smokers is 5.83, same for non-smokers is 2.0.  
+  
+This partially explains why non-smokers get lesser grades than smokers.
+
+
+## Testing the total.score by age groups
+
+```{r 25yaşplot, echo=FALSE, warning=FALSE}
+
+ncscore2plot <- ggplot(data=answers, aes(x=Total.scores, fill=Yaş>25))
+
+ncscore2plot+
+  geom_bar(position = 'dodge')+
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+```
+
+is the data normally distributed?  
+Ho: data is normally distributed  
+Ha: data is not normally distributed 
+
+```{r lenyaş, echo=FALSE, warning=FALSE}
+sprintf("length of samples that are older than 25: %d", length(na.omit(Total.scores[Yaş > 25])))
+sprintf("length of samples that are younger than 25: %d", length(na.omit(Total.scores[Yaş < 25])))
+shapiro.test(Total.scores[Yaş > 25])
+shapiro.test(Total.scores[Yaş < 25])
+```
+p-value 0.6939, 0.5289 > 0.05, 
+Fail to reject the null hyphotesis,  
+We assume both dataframes are normal 
+
+are variances the same for both sets?  
+Ho: varMale == varFemale  
+Ha: varMale != varFemale
+
+```{r varyaş, echo=FALSE, warning=FALSE}
+var.test(Total.scores[Yaş > 25], Total.scores[Yaş < 25])
+```
+confidence interval for variances equality includes 1 [0.2231244, 2.0315278]  
+p-value = 0.5005 > 0.05  
+Fail to Reject Null  
+We assume variances are equal.  
+
+
+Let's create a null hypothesis;
+
+Ho: difference in mean total.scores of the age group > 25 and age < 25 is 0
+An alternative hypothesis,  
+Ha: difference in mean total.scores for age group > 25 and age < 25 is not equal to 0
+
+```{r scoreonyaştest, echo=FALSE, warning=FALSE}
+t.test(Total.scores[Yaş>25], Total.scores[Yaş<25],
+       conf.level = 0.95,
+       mu = 0,
+       var.equal = TRUE,
+       alternative = "two.sided"  )
+
+```
+p-value = 0.1465 > 0.05  
+confidence interval includes mu=0. [-3.580581, 23.095733]  
+t(o) (0.75962) < t(t) ~2  
+Fail to Reject Null  
+There is no evidence that mean difference of Total.scores for samples younger than 25 and samples older than 25 is not 0, with %95 confidence. 
+
+
+
+## ANOVA test
+### Test the total.score value by education level (3 groups) 
+Ho: data is normally distributed
+Ha: data is not normally distributed
+
+``` {r ANOVA Eğitim, echo=FALSE, warning=FALSE}
+ncscore2plot <- ggplot(data=answers, aes(y=as.numeric(as.character(Total.scores)), x=Eğitim.durumu, fill=Eğitim.durumu))
+ncscore2plot+
+  geom_boxplot()+
+  ylab("Total.scores")
+
+shapiro.test(Total.scores[Eğitim.durumu=='İlkokul']) #Normal
+shapiro.test(Total.scores[Eğitim.durumu=='Lise']) #Normal
+shapiro.test(Total.scores[Eğitim.durumu=='Üniversite']) #Normal
+```
+p-value 0.4925, 0.7403, 0.2088 > 0.05, 
+Fail to reject the null hyphotesis,  
+We assume all three dataframes are normal 
+
+
+Variance homogenety
+H0:var1=var2=var3
+Ha:At least one of them is different
+
+``` {r Eğitimvariancehomogenity, echo=FALSE, warning=FALSE}
+bartlett.test(Total.scores~Eğitim.durumu)
+```
+
+p-value 0.5361 > 0.05 
+Fail reject the null.
+We assume variances are homogen
+
+
+## Analysis of variance
+
+H0:mu1=mu2=mu3=mu4
+Ha:At least one is different
+
+``` {r anovaEğitim, echo=FALSE, warning=FALSE}
+model<-aov(Total.scores~Eğitim.durumu)
+model$coefficients
+summary(model)
+```
+P-value 0.134 > 0.05
+Fail to reject null
+P-values suggest that there is no group with different variances, If there was, we could use Posthoc test to find out which one.
+
+## Posthoc test to find which one is different.
+
+``` {r TukeyEğitim, echo=FALSE, warning=FALSE}
+TukeyHSD(model)
+```
+### Anova model plots.
+We have already tested the assumptions needed for the anova test, But the assumptions can also be tested using the plots.
+
+``` {r anovaplot, echo=FALSE, warning=FALSE}
+plot(model)
+```
+
